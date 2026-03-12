@@ -20,10 +20,10 @@ app = Flask(__name__, static_folder='static')
 CORS(app)
 
 # ── Gemini Setup ─────────────────────────────────────────────────────────────
-genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
+genai.configure(api_key=os.getenv('AIzaSyC9BFnYowBjIwWZjGk373Pe4qdthnvSOXw'))
 model = genai.GenerativeModel('gemini-1.5-flash')  # Free model
 
-PAGESPEED_API = os.getenv('PAGESPEED_API_KEY', '')  # Optional - free from Google
+PAGESPEED_API = os.getenv('AIzaSyBaya6GbLWe6ZmBpDdhk9yHiYGdoWHY1nw', '')  # Optional - free from Google
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 def fetch_page(url):
