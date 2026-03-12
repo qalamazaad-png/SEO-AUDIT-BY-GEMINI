@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SEO Audit Agent — by Saddam Adil</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Epilogue:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #050810;
+  --surface: #0d1117;
+  --surface2: #161b22;
+  --border: #21262d;
+  --accent: #00d4ff;
+  --accent2: #7c3aed;
+  --green: #3fb950;
+  --yellow: #d29922;
+  --red: #f85149;
+  --text: #e6edf3;
+  --muted: #8b949e;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Epilogue', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Animated background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 20% -20%, rgba(0,212,255,0.07) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 110%, rgba(124,58,237,0.07) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.container { max-width: 1100px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+/* Header */
+header { padding: 40px 0 20px; text-align: center; }
+.logo {
+  font-family: 'Syne', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  color: var(--accent);
+  margin-bottom: 16px;
+}
+h1 {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(32px, 5vw, 56px);
+  font-weight: 800;
+  background: linear-gradient(135deg, #fff 30%, var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  line-height: 1.1;
+  margin-bottom: 12px;
+}
+.subtitle { font-size: 16px; color: var(--muted); max-width: 500px; margin: 0 auto; }
+
+/* Search Box */
+.search-section { padding: 40px 0; }
+.search-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  transition: border-color 0.3s;
+  box-shadow: 0 0 40px rgba(0,212,255,0.05);
+}
+.search-box:focus-within { border-color: var(--accent); box-shadow: 0 0 40px rgba(0,212,255,0.1); }
+.url-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 16px;
+  font-family: 'Epilogue', sans-serif;
+  color: var(--text);
+}
+.url-input::placeholder { color: var(--muted); }
+.audit-btn {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: white;
+  border: none;
+  padding: 12px 28px;
+  border-radius: 10px;
+  font-family: 'Syne', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.audit-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,212,255,0.3); }
+.audit-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* Loading */
+.loading {
+  display: none;
+  text-align: center;
+  padding: 60px 20px;
+}
+.loading.show { display: block; }
+.spinner-ring {
+  width: 60px; height: 60px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 20px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-steps { display: flex; flex-direction: column; gap: 8px; max-width: 300px; margin: 20px auto 0; }
+.loading-step {
+  font-size: 13px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: color 0.3s;
+}
+.loading-step.active { color: var(--accent); }
+.loading-step.done { color: var(--green); }
+.step-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+/* Results */
+.results { display: none; padding-bottom: 60px; }
+.results.show { display: block; animation: fadeUp 0.5s ease; }
+@keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+
+/* Score Hero */
+.score-hero {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 40px;
+  margin-bottom: 24px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 32px;
+  align-items: center;
+}
+.score-circle {
+  width: 120px; height: 120px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  flex-shrink: 0;
+}
+.score-circle svg { position: absolute; top: 0; left: 0; transform: rotate(-90deg); }
+.score-number {
+  font-family: 'Syne', sans-serif;
+  font-size: 36px;
+  font-weight: 800;
+  position: relative;
+  z-index: 1;
+}
+.score-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+.score-info h2 { font-family: 'Syne', sans-serif; font-size: 22px; margin-bottom: 8px; }
+.score-info .url-display { font-size: 13px; color: var(--accent); margin-bottom: 12px; }
+.score-info .summary-text { font-size: 14px; color: var(--muted); line-height: 1.7; }
+.grade-badge {
+  width: 64px; height: 64px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Syne', sans-serif;
+  font-size: 28px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+/* Stats Row */
+.stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 24px; }
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  text-align: center;
+  transition: border-color 0.2s;
+}
+.stat-card:hover { border-color: var(--accent); }
+.stat-num { font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 800; margin-bottom: 4px; }
+.stat-lbl { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+
+/* Pagespeed */
+.pagespeed-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 24px; }
+.ps-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+}
+.ps-score { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+.ps-label { font-size: 11px; color: var(--muted); }
+.ps-bar { height: 4px; background: var(--border); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+.ps-fill { height: 100%; border-radius: 2px; transition: width 1s ease; }
+
+/* Section */
+.section { margin-bottom: 24px; }
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.section-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+}
+.count-badge {
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Issue Items */
+.issue-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 10px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 14px;
+  align-items: start;
+  transition: border-color 0.2s;
+}
+.issue-item:hover { border-color: rgba(255,255,255,0.15); }
+.issue-icon { font-size: 18px; margin-top: 2px; }
+.issue-cat { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 4px; }
+.issue-name { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+.issue-detail { font-size: 13px; color: var(--muted); }
+.issue-fix {
+  font-size: 12px;
+  color: var(--accent);
+  margin-top: 6px;
+  padding: 6px 10px;
+  background: rgba(0,212,255,0.06);
+  border-radius: 6px;
+  border-left: 2px solid var(--accent);
+}
+.issue-badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* AI Priorities */
+.priority-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.priority-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+  transition: border-color 0.2s;
+}
+.priority-card:hover { border-color: var(--accent2); }
+.priority-num {
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Syne', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+.priority-action { font-size: 13.5px; font-weight: 500; line-height: 1.5; margin-bottom: 10px; }
+.priority-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.tag {
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* Quick Wins */
+.quick-wins { display: flex; flex-direction: column; gap: 8px; }
+.win-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 14px;
+}
+.win-icon { color: var(--green); font-size: 16px; }
+
+/* Traffic estimate */
+.traffic-card {
+  background: linear-gradient(135deg, rgba(0,212,255,0.08), rgba(124,58,237,0.08));
+  border: 1px solid rgba(0,212,255,0.2);
+  border-radius: 16px;
+  padding: 28px;
+  text-align: center;
+  margin-bottom: 24px;
+}
+.traffic-num {
+  font-family: 'Syne', sans-serif;
+  font-size: 48px;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.traffic-label { font-size: 14px; color: var(--muted); margin-top: 4px; }
+
+/* Error */
+.error-box {
+  display: none;
+  background: rgba(248,81,73,0.1);
+  border: 1px solid rgba(248,81,73,0.3);
+  border-radius: 12px;
+  padding: 20px;
+  color: var(--red);
+  text-align: center;
+  margin-bottom: 20px;
+}
+.error-box.show { display: block; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .score-hero { grid-template-columns: 1fr; text-align: center; }
+  .stats-row, .pagespeed-grid { grid-template-columns: repeat(2,1fr); }
+  .priority-grid { grid-template-columns: 1fr; }
+  .grade-badge { margin: 0 auto; }
+  .score-circle { margin: 0 auto; }
+}
+
+.cwv-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-top: 12px; }
+.cwv-item { background: var(--surface2); border-radius: 8px; padding: 12px; text-align: center; }
+.cwv-val { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; }
+.cwv-key { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="logo">⚡ AI-Powered</div>
+    <h1>SEO Audit Agent</h1>
+    <p class="subtitle">Deep technical SEO analysis powered by Gemini AI — in seconds</p>
+  </header>
+
+  <div class="search-section">
+    <div class="search-box">
+      <span style="color:var(--muted);font-size:20px">🔍</span>
+      <input class="url-input" id="url-input" type="text" placeholder="Enter any website URL — e.g. example.com" />
+      <button class="audit-btn" id="audit-btn" onclick="runAudit()">Run Audit</button>
+    </div>
+  </div>
+
+  <div class="error-box" id="error-box"></div>
+
+  <!-- Loading -->
+  <div class="loading" id="loading">
+    <div class="spinner-ring"></div>
+    <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:8px">Auditing your website...</div>
+    <div style="color:var(--muted);font-size:14px">This takes 15-30 seconds</div>
+    <div class="loading-steps">
+      <div class="loading-step active" id="step1"><span class="step-dot"></span>Fetching website...</div>
+      <div class="loading-step" id="step2"><span class="step-dot"></span>Running SEO checks...</div>
+      <div class="loading-step" id="step3"><span class="step-dot"></span>Analyzing PageSpeed...</div>
+      <div class="loading-step" id="step4"><span class="step-dot"></span>Checking broken links...</div>
+      <div class="loading-step" id="step5"><span class="step-dot"></span>Asking Gemini AI...</div>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="results" id="results"></div>
+
+</div>
+
+<script>
+let currentStep = 1;
+let stepInterval;
+
+function advanceStep() {
+  if (currentStep <= 5) {
+    document.getElementById(`step${currentStep}`).classList.add('done');
+    document.getElementById(`step${currentStep}`).classList.remove('active');
+    currentStep++;
+    if (currentStep <= 5) {
+      document.getElementById(`step${currentStep}`).classList.add('active');
+    }
+  }
+}
+
+function getScoreColor(score) {
+  if (score >= 80) return '#3fb950';
+  if (score >= 60) return '#d29922';
+  return '#f85149';
+}
+
+function getGradeStyle(grade) {
+  const styles = {
+    'A': { bg: 'rgba(63,185,80,0.15)', color: '#3fb950', border: 'rgba(63,185,80,0.3)' },
+    'B': { bg: 'rgba(0,212,255,0.12)', color: '#00d4ff', border: 'rgba(0,212,255,0.3)' },
+    'C': { bg: 'rgba(210,153,34,0.15)', color: '#d29922', border: 'rgba(210,153,34,0.3)' },
+    'D': { bg: 'rgba(248,81,73,0.12)', color: '#f85149', border: 'rgba(248,81,73,0.3)' },
+    'F': { bg: 'rgba(248,81,73,0.2)',  color: '#f85149', border: 'rgba(248,81,73,0.5)' },
+  };
+  return styles[grade] || styles['C'];
+}
+
+function getImpactTag(impact) {
+  const map = { High: '#f85149', Medium: '#d29922', Low: '#3fb950' };
+  const color = map[impact] || '#8b949e';
+  return `<span class="tag" style="background:${color}22;color:${color}">${impact} Impact</span>`;
+}
+
+function getEffortTag(effort) {
+  const map = { Easy: '#3fb950', Medium: '#d29922', Hard: '#f85149' };
+  const color = map[effort] || '#8b949e';
+  return `<span class="tag" style="background:${color}22;color:${color}">${effort}</span>`;
+}
+
+async function runAudit() {
+  const url = document.getElementById('url-input').value.trim();
+  if (!url) { showError('Please enter a URL!'); return; }
+
+  // Reset UI
+  document.getElementById('error-box').classList.remove('show');
+  document.getElementById('results').classList.remove('show');
+  document.getElementById('results').innerHTML = '';
+  document.getElementById('loading').classList.add('show');
+  document.getElementById('audit-btn').disabled = true;
+  currentStep = 1;
+
+  // Reset steps
+  for (let i = 1; i <= 5; i++) {
+    const el = document.getElementById(`step${i}`);
+    el.classList.remove('active', 'done');
+  }
+  document.getElementById('step1').classList.add('active');
+
+  // Advance steps visually
+  stepInterval = setInterval(advanceStep, 5000);
+
+  try {
+    const res = await fetch('/api/audit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url })
+    });
+    const data = await res.json();
+
+    clearInterval(stepInterval);
+    document.getElementById('loading').classList.remove('show');
+    document.getElementById('audit-btn').disabled = false;
+
+    if (data.error) { showError(data.error); return; }
+    renderResults(data);
+
+  } catch(e) {
+    clearInterval(stepInterval);
+    document.getElementById('loading').classList.remove('show');
+    document.getElementById('audit-btn').disabled = false;
+    showError('Connection error. Make sure the Python server is running!');
+  }
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-box');
+  el.textContent = '⚠️ ' + msg;
+  el.classList.add('show');
+}
+
+function renderResults(data) {
+  const { url, issues, warnings, passed, pagespeed, ai_analysis, summary } = data;
+  const score = summary.score;
+  const scoreColor = getScoreColor(score);
+  const gradeStyle = getGradeStyle(summary.grade);
+
+  // Score circle SVG
+  const r = 52, cx = 60, cy = 60;
+  const circ = 2 * Math.PI * r;
+  const dash = circ * (score / 100);
+
+  let html = `
+  <!-- Score Hero -->
+  <div class="score-hero">
+    <div class="score-circle">
+      <svg width="120" height="120" viewBox="0 0 120 120">
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--border)" stroke-width="8"/>
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${scoreColor}" stroke-width="8"
+          stroke-dasharray="${dash} ${circ}" stroke-linecap="round"
+          style="transition:stroke-dasharray 1.5s ease"/>
+      </svg>
+      <div class="score-number" style="color:${scoreColor}">${score}</div>
+      <div class="score-label">Score</div>
+    </div>
+    <div class="score-info">
+      <div class="url-display">🔗 ${url}</div>
+      <h2>SEO Audit Complete</h2>
+      <div class="summary-text">${ai_analysis.summary}</div>
+    </div>
+    <div class="grade-badge" style="background:${gradeStyle.bg};color:${gradeStyle.color};border:1px solid ${gradeStyle.border}">
+      ${summary.grade}
+    </div>
+  </div>
+
+  <!-- Stats Row -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-num" style="color:var(--red)">${summary.total_issues}</div>
+      <div class="stat-lbl">Critical Issues</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" style="color:var(--yellow)">${summary.total_warnings}</div>
+      <div class="stat-lbl">Warnings</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" style="color:var(--green)">${summary.total_passed}</div>
+      <div class="stat-lbl">Passed</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" style="color:var(--accent)">${data.page_data.word_count || 0}</div>
+      <div class="stat-lbl">Word Count</div>
+    </div>
+  </div>
+
+  <!-- PageSpeed -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">⚡ Core Web Vitals & PageSpeed</div>
+    </div>
+    <div class="pagespeed-grid">
+      ${['performance','seo','accessibility','best_practices'].map(key => {
+        const val = pagespeed[key] || 0;
+        const col = getScoreColor(val);
+        const label = key.replace('_',' ').replace(/\b\w/g, l => l.toUpperCase());
+        return `<div class="ps-card">
+          <div class="ps-score" style="color:${col}">${val}</div>
+          <div class="ps-label">${label}</div>
+          <div class="ps-bar"><div class="ps-fill" style="width:${val}%;background:${col}"></div></div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="cwv-grid">
+      ${[['FCP',pagespeed.fcp],['LCP',pagespeed.lcp],['CLS',pagespeed.cls],['TBT',pagespeed.tbt]].map(([k,v]) => `
+        <div class="cwv-item">
+          <div class="cwv-val">${v || 'N/A'}</div>
+          <div class="cwv-key">${k}</div>
+        </div>`).join('')}
+    </div>
+  </div>
+
+  <!-- Traffic Estimate -->
+  <div class="traffic-card">
+    <div class="traffic-num">${ai_analysis.estimated_traffic_increase || '20-40%'}</div>
+    <div class="traffic-label">Estimated organic traffic increase if all issues are fixed</div>
+  </div>
+
+  <!-- AI Top Priorities -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">🤖 Gemini AI — Top 5 Priorities</div>
+    </div>
+    <div class="priority-grid">
+      ${(ai_analysis.top_priorities || []).map(p => `
+        <div class="priority-card">
+          <div class="priority-num">${p.priority}</div>
+          <div class="priority-action">${p.action}</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:8px">📅 ${p.timeframe}</div>
+          <div class="priority-tags">
+            ${getImpactTag(p.impact)}
+            ${getEffortTag(p.effort)}
+          </div>
+        </div>`).join('')}
+    </div>
+  </div>
+
+  <!-- Critical Issues -->
+  ${issues.length > 0 ? `
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">🔴 Critical Issues</div>
+      <span class="count-badge" style="background:rgba(248,81,73,0.15);color:var(--red)">${issues.length}</span>
+    </div>
+    ${issues.map(i => `
+      <div class="issue-item" style="border-left:3px solid var(--red)">
+        <div class="issue-icon">❌</div>
+        <div>
+          <div class="issue-cat">${i.category}</div>
+          <div class="issue-name">${i.item}</div>
+          <div class="issue-detail">${i.detail}</div>
+          <div class="issue-fix">💡 Fix: ${i.fix}</div>
+        </div>
+        <span class="issue-badge" style="background:rgba(248,81,73,0.15);color:var(--red)">Error</span>
+      </div>`).join('')}
+  </div>` : ''}
+
+  <!-- Warnings -->
+  ${warnings.length > 0 ? `
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">🟡 Warnings</div>
+      <span class="count-badge" style="background:rgba(210,153,34,0.15);color:var(--yellow)">${warnings.length}</span>
+    </div>
+    ${warnings.map(w => `
+      <div class="issue-item" style="border-left:3px solid var(--yellow)">
+        <div class="issue-icon">⚠️</div>
+        <div>
+          <div class="issue-cat">${w.category}</div>
+          <div class="issue-name">${w.item}</div>
+          <div class="issue-detail">${w.detail}</div>
+          <div class="issue-fix">💡 Fix: ${w.fix}</div>
+        </div>
+        <span class="issue-badge" style="background:rgba(210,153,34,0.15);color:var(--yellow)">Warning</span>
+      </div>`).join('')}
+  </div>` : ''}
+
+  <!-- Passed -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">✅ Passing Checks</div>
+      <span class="count-badge" style="background:rgba(63,185,80,0.15);color:var(--green)">${passed.length}</span>
+    </div>
+    ${passed.map(p => `
+      <div class="issue-item" style="border-left:3px solid var(--green);opacity:0.8">
+        <div class="issue-icon">✅</div>
+        <div>
+          <div class="issue-cat">${p.category}</div>
+          <div class="issue-name">${p.item}</div>
+          <div class="issue-detail">${p.detail}</div>
+        </div>
+        <span class="issue-badge" style="background:rgba(63,185,80,0.15);color:var(--green)">Pass</span>
+      </div>`).join('')}
+  </div>
+
+  <!-- Quick Wins -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">⚡ Quick Wins — Do These Today</div>
+    </div>
+    <div class="quick-wins">
+      ${(ai_analysis.quick_wins || []).map(w => `
+        <div class="win-item">
+          <span class="win-icon">⚡</span>
+          <span>${w}</span>
+        </div>`).join('')}
+    </div>
+  </div>
+
+  <!-- Competitor Advice -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">🎯 How to Outrank Competitors</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;font-size:14px;line-height:1.8;color:var(--muted)">
+      ${ai_analysis.competitor_advice}
+    </div>
+  </div>
+
+  <div style="text-align:center;padding:20px 0;color:var(--muted);font-size:13px">
+    Built by <strong style="color:var(--accent)">Saddam Adil</strong> · AI-Augmented SEO Agent · Powered by Gemini AI
+  </div>`;
+
+  const resultsEl = document.getElementById('results');
+  resultsEl.innerHTML = html;
+  resultsEl.classList.add('show');
+  resultsEl.scrollIntoView({ behavior: 'smooth' });
+}
+
+// Enter key support
+document.getElementById('url-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') runAudit();
+});
+</script>
+</body>
+</html>
