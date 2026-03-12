@@ -20,10 +20,10 @@ app = Flask(__name__, static_folder='static')
 CORS(app)
 
 # ── Gemini Setup ─────────────────────────────────────────────────────────────
-genai.configure(api_key=os.getenv('AIzaSyC9BFnYowBjIwWZjGk373Pe4qdthnvSOXw'))
+genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
 model = genai.GenerativeModel('gemini-1.5-flash')  # Free model
 
-PAGESPEED_API = os.getenv('AIzaSyBaya6GbLWe6ZmBpDdhk9yHiYGdoWHY1nw', '')  # Optional - free from Google
+PAGESPEED_API = os.getenv('AIzaSyC9BFnYowBjIwWZjGk373Pe4qdthnvSOXw', '')  # Optional - free from Google
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 def fetch_page(url):
@@ -346,6 +346,6 @@ def health():
     return jsonify({'status': 'ok', 'message': 'SEO Audit Agent running!'})
 
 if __name__ == '__main__':
-    port = int(os.getenv('PORT', 5000))
+    port = int(os.getenv('PORT', 8080))
     print(f"\n🔍 SEO Audit Agent running at http://localhost:{port}\n")
-    app.run(debug=True, port=port)
+    app.run(host='0.0.0.0', debug=False, port=port)
